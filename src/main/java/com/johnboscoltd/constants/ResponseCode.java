@@ -13,7 +13,9 @@ public enum ResponseCode {
 
     CUSTOMER_ACCOUNT_ALREADY_EXIST("807"),
 
-    NOT_ELIGIBLE("808");
+    NOT_ELIGIBLE("808"),
+
+    NO_TRANSACTION_HISTORY("809");
 
 
 

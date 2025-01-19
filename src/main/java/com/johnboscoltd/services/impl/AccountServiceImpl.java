@@ -8,6 +8,7 @@ import com.johnboscoltd.dto.GetAccountStatementDto;
 import com.johnboscoltd.enums.AccountTypes;
 import com.johnboscoltd.constants.ResponseCode;
 import com.johnboscoltd.constants.ResponseMessage;
+import com.johnboscoltd.exceptions.ErrorGenericException;
 import com.johnboscoltd.exceptions.GenericException;
 import com.johnboscoltd.model.Account;
 import com.johnboscoltd.model.Customer;
@@ -102,7 +103,7 @@ public class AccountServiceImpl implements AccountService {
         return customer;
     }
 
-    @Transactional
+//    @Transactional
     public Customer createAccountForNewCustomer(CreateAccountDto.Request request, String accountNumber) {
         log.info("i am here:::::::::::::::::::::::::");
         log.info("Request before transformation: {}", request);
@@ -113,7 +114,11 @@ public class AccountServiceImpl implements AccountService {
         log.info("after mapper::::: " + customer);
         validateCreateCustomerRequest(customer);
         System.out.println("Customer:: "+customer);
-//        customer = customerRepository.save(customer);
+        try{
+        customerRepository.save(customer);
+        }catch (Exception e){
+          log.info("customer creation failed:: ");
+        }
         return customer;
     }
 
@@ -213,6 +218,9 @@ public class AccountServiceImpl implements AccountService {
     }
 
     public Page<GetAccountStatementDto.Response> mapTo(Page<TransactionHistory> transactionHistoryPage) {
+        if (transactionHistoryPage == null || transactionHistoryPage.isEmpty()) {
+            throw new GenericException(ResponseCode.NO_TRANSACTION_HISTORY.getCode(), HttpStatus.OK, "No Transaction History found");
+        }
         return transactionHistoryPage.map(transactionHistory -> {
             GetAccountStatementDto.Response response = new GetAccountStatementDto.Response();
             response.setCustomerId(transactionHistory.getCustomerId());
