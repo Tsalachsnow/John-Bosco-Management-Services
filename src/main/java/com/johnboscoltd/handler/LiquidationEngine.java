@@ -33,14 +33,15 @@ public class LiquidationEngine {
     public void debitLoanAmount() {
         log.info("Starting scheduled task to debit loan amounts...");
 
-        List<Loan> loans = loanRepository.findAllByIsApproved(true);
+        List<Loan> loans = loanRepository.findByIsApprovedAndIsLiquidated(true, false);
         for (Loan loan : loans) {
+            BigDecimal amountLiquidated = loan.getAmountLiquidated() != null ? loan.getAmountLiquidated() : BigDecimal.ZERO;
+            BigDecimal loanAmount = loan.getAmount();
             try {
                 Account account = accountRepository.findByAccountNumber(loan.getAccountNumber());
                 BigDecimal avlBal = account.getAvlBal() != null ? account.getAvlBal() : BigDecimal.ZERO;
                 BigDecimal currBal = account.getCurrBal() != null ? account.getCurrBal() : BigDecimal.ZERO;
 
-                BigDecimal loanAmount = loan.getAmount();
                 String product = loan.getProduct().getValue();
                 double percentageToDebit = Double.parseDouble(product) / 100;
                 BigDecimal debitAmount = loanAmount.multiply(BigDecimal.valueOf(percentageToDebit));
@@ -69,12 +70,15 @@ public class LiquidationEngine {
                             .setResponseCode(ResponseCode.SUCCESS.getCode())
                             .setResponseMessage(ResponseMessage.TRANSACTION_SUCCESSFUL.getMessage());
                     transactionHistoryRepository.save(transaction);
-                    loan.setLoanBalance(loanAmount.subtract(debitAmount));
-                    BigDecimal amountLiquidated = loan.getAmountLiquidated() != null ? loan.getAmountLiquidated() : BigDecimal.ZERO;
-                    loan.setAmountLiquidated(amountLiquidated.add(debitAmount));
-                    if(amountLiquidated.compareTo(loanAmount) == 0){
+                    if(loan.getAmountLiquidated() == null){
+                        loan.setLoanBalance(loanAmount.subtract(debitAmount));
+                    }else{
+                       loan.setLoanBalance(loanAmount.subtract(loan.getAmountLiquidated()));
+                    }
+                    if(amountLiquidated.compareTo(loanAmount.subtract(new BigDecimal(product))) == 0){
                         loan.setIsLiquidated(true);
                     }
+                    loan.setAmountLiquidated(amountLiquidated.add(debitAmount));
                     loanRepository.save(loan);
 
                     log.info("Successfully debited 10% of loan amount for account: {}", account.getAccountNumber());

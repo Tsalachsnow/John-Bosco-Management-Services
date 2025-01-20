@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface LoanRepository extends JpaRepository<Loan, String> {
     Optional<Loan> findByCustomerIdAndIsApprovedAndIsLiquidated(String customerId, Boolean isApproved, Boolean isLiquidated);
     Optional<Loan> findByReferenceNo(String refNo);
-    List<Loan> findAllByIsApproved(Boolean isApproved);
+    List<Loan> findByIsApprovedAndIsLiquidated(Boolean isApproved, Boolean isLiquidated);
 }
